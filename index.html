@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>姊妹出遊行程規劃器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#89CFF0; --blue-light:#EAF6FD; --blue-dark:#4BA3D6;
+    --text:#2F3E4E; --muted:#6B7C8C; --card:#FFFFFF; --page:#F7FBFE;
+    --warn:#F28B82; --warn-bg:#FDECEA; --line:#DCEEF8;
+    --radius:16px; --shadow:0 4px 18px rgba(75,163,214,.12);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;font-family:'Noto Sans TC',system-ui,-apple-system,sans-serif;color:var(--text);background:var(--page);line-height:1.6;font-size:15px}
+  button,input,select{font:inherit;color:inherit}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 16px 48px}
+
+  header{padding:28px 0 18px;text-align:center}
+  header h1{margin:0;font-size:26px;font-weight:700;letter-spacing:.5px}
+  header h1 span{color:var(--blue-dark)}
+  header p{margin:4px 0 0;color:var(--muted);font-size:14px}
+
+  .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+  h2{font-size:18px;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+  h2 .num{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--blue);color:#fff;font-size:14px}
+
+  /* settings */
+  .settings{display:grid;gap:14px;margin-bottom:18px}
+  @media(min-width:760px){.settings{grid-template-columns:1fr 1fr 2fr}}
+  label.field{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:500}
+  .input, select.input{border:1.5px solid var(--line);border-radius:12px;padding:9px 12px;background:#fff;width:100%;outline:none;transition:border-color .15s}
+  .input:focus{border-color:var(--blue)}
+  .members{display:flex;flex-wrap:wrap;gap:8px}
+  .member{display:flex;align-items:center;background:var(--blue-light);border-radius:999px;padding:2px 4px 2px 12px}
+  .member input{border:none;background:transparent;width:70px;outline:none;padding:5px 0}
+  .member button{border:none;background:none;cursor:pointer;color:var(--muted);width:26px;height:26px;border-radius:50%}
+  .member button:hover{background:#fff}
+
+  .btn{border:none;border-radius:999px;padding:9px 18px;cursor:pointer;font-weight:500;transition:background .15s,transform .05s}
+  .btn:active{transform:scale(.97)}
+  .btn-primary{background:var(--blue);color:#fff}
+  .btn-primary:hover{background:var(--blue-dark)}
+  .btn-ghost{background:var(--blue-light);color:var(--blue-dark)}
+  .btn-ghost:hover{background:#d8eefb}
+  .btn-sm{padding:6px 14px;font-size:14px}
+  .btn[disabled]{opacity:.5;cursor:not-allowed}
+
+  /* main grid */
+  .grid{display:grid;gap:18px}
+  @media(min-width:900px){.grid{grid-template-columns:1.25fr 1fr;align-items:start}.plan{position:sticky;top:16px}}
+
+  /* filters */
+  .filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+  .chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 13px;cursor:pointer;font-size:14px}
+  .chip.on{background:var(--blue);border-color:var(--blue);color:#fff}
+  .search-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+  .search-row .input{flex:1;min-width:160px}
+  .switch{display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;user-select:none;white-space:nowrap}
+  .switch input{width:18px;height:18px;accent-color:var(--blue-dark)}
+
+  .places{display:grid;gap:12px}
+  @media(min-width:560px){.places{grid-template-columns:1fr 1fr}}
+  .place{border:1.5px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:6px;background:#fff}
+  .place.over{opacity:.6}
+  .place-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+  .place h3{margin:0;font-size:16px;line-height:1.35}
+  .tag-type{font-size:12px;background:var(--blue-light);color:var(--blue-dark);padding:2px 8px;border-radius:999px;white-space:nowrap}
+  .place .desc{margin:0;font-size:14px}
+  .place .meta{font-size:13px;color:var(--muted)}
+  .badges{display:flex;gap:6px;flex-wrap:wrap}
+  .badge{font-size:12px;border-radius:999px;padding:1px 8px}
+  .badge.warn{background:var(--warn-bg);color:#c0544b}
+  .badge.ok{background:var(--blue-light);color:var(--blue-dark)}
+  .place .btn{align-self:flex-start;margin-top:4px}
+  .empty{color:var(--muted);text-align:center;padding:24px 8px;font-size:14px}
+
+  /* timeline */
+  .tl-head{display:flex;justify-content:space-between;align-items:center;background:var(--blue-light);border-radius:12px;padding:8px 14px;font-size:14px;font-weight:500;margin-bottom:10px}
+  .timeline{list-style:none;margin:0;padding:0 0 0 14px;border-left:3px solid var(--blue);display:flex;flex-direction:column;gap:12px}
+  .tl-item{position:relative;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:10px 40px 10px 12px}
+  .tl-item::before{content:"";position:absolute;left:-23px;top:16px;width:13px;height:13px;border-radius:50%;background:#fff;border:3px solid var(--blue)}
+  .tl-item.overlap{border-color:var(--warn)}
+  .tl-item.overlap::before{border-color:var(--warn)}
+  .tl-time{display:flex;align-items:center;gap:4px;font-size:14px}
+  .tl-time input{border:1.5px solid var(--line);border-radius:8px;padding:2px 4px;background:#fff}
+  .tl-name{font-weight:700;margin-top:2px}
+  .tl-meta{font-size:13px;color:var(--muted)}
+  .tl-warn{font-size:13px;color:#c0544b;margin-top:2px}
+  .del{position:absolute;right:8px;top:8px;border:none;background:none;cursor:pointer;width:28px;height:28px;border-radius:50%;color:var(--muted)}
+  .del:hover{background:var(--warn-bg);color:#c0544b}
+
+  .budget{margin-top:16px;border-top:1.5px dashed var(--line);padding-top:14px}
+  .bar{height:12px;background:var(--blue-light);border-radius:999px;overflow:hidden;margin:8px 0}
+  .bar div{height:100%;background:var(--blue);border-radius:999px;transition:width .3s}
+  .bar.over div{background:var(--warn)}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+  .stat{background:var(--page);border-radius:12px;padding:8px 4px}
+  .stat b{display:block;font-size:17px}
+  .stat span{font-size:12px;color:var(--muted)}
+  .stat.over b{color:#c0544b}
+  .over-msg{color:#c0544b;font-size:14px;margin:6px 0 0}
+
+  /* split & share */
+  .bottom{display:grid;gap:18px;margin-top:18px}
+  @media(min-width:900px){.bottom{grid-template-columns:1.25fr 1fr;align-items:start}}
+  .split-row{display:grid;grid-template-columns:1fr 100px 96px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .split-row .input{padding:6px 8px}
+  .split-head{font-size:12px;color:var(--muted);border-bottom:none;padding-bottom:0}
+  .result{margin-top:14px;background:var(--blue-light);border-radius:12px;padding:12px 14px;font-size:14px}
+  .result ul{margin:6px 0 0;padding-left:20px}
+  .result li{margin:3px 0}
+  .share-box{display:flex;flex-direction:column;gap:10px}
+  .share-box .input{font-size:13px}
+  .hint{font-size:13px;color:var(--muted);margin:0}
+
+  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:28px}
+
+  /* dialogs */
+  dialog{border:none;border-radius:var(--radius);padding:20px;width:min(360px,calc(100vw - 32px));box-shadow:0 10px 40px rgba(47,62,78,.2);color:var(--text)}
+  dialog::backdrop{background:rgba(47,62,78,.35)}
+  dialog h3{margin:0 0 12px;font-size:17px}
+  dialog form{display:flex;flex-direction:column;gap:12px}
+  .dlg-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+  .fab{position:fixed;right:16px;bottom:16px;z-index:5;box-shadow:0 6px 20px rgba(75,163,214,.35);display:none}
+  @media(max-width:899px){.fab.has{display:block}}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--text);color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;max-width:calc(100vw - 32px);text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>姊妹出遊<span>行程規劃器</span></h1>
+    <p>選地點、排時間、算預算，一個連結分享給姊妹們</p>
+  </header>
+
+  <!-- 1. 設定 -->
+  <section class="card settings" aria-label="出遊設定">
+    <label class="field">地區
+      <select id="area" class="input"></select>
+    </label>
+    <label class="field">每人預算上限（元）
+      <input id="budget" class="input" type="number" min="0" step="100" inputmode="numeric">
+    </label>
+    <div class="field" style="font-size:13px;color:var(--muted);font-weight:500">
+      <span>成員（<span id="memberCount"></span> 人，2–6 人）</span>
+      <div class="members" id="members"></div>
+    </div>
+  </section>
+
+  <div class="grid">
+    <!-- 2. 探索 -->
+    <section class="card" aria-label="探索地點">
+      <h2><span class="num">1</span>探索地點</h2>
+      <div class="filters" id="typeFilters"></div>
+      <div class="search-row">
+        <input id="search" class="input" type="search" placeholder="搜尋：拍照、夜景、拉麵…">
+        <label class="switch"><input type="checkbox" id="onlyBudget">只看預算內</label>
+      </div>
+      <div class="places" id="places"></div>
+      <div style="margin-top:14px;text-align:center">
+        <button class="btn btn-ghost" id="openCustom">＋ 新增自訂地點</button>
+      </div>
+    </section>
+
+    <!-- 3. 行程 -->
+    <section class="card plan" aria-label="行程">
+      <h2><span class="num">2</span>我們的行程</h2>
+      <div id="timelineWrap"></div>
+      <div class="budget" id="budgetBox"></div>
+    </section>
+  </div>
+
+  <div class="bottom">
+    <!-- 4. 分帳 -->
+    <section class="card" aria-label="分帳">
+      <h2><span class="num">3</span>分帳</h2>
+      <p class="hint">出遊後填入每一站「全團實際花費」和「誰先付」，自動算出誰該轉給誰。</p>
+      <div id="splitInputs"></div>
+      <div class="result" id="splitResult"></div>
+    </section>
+
+    <!-- 5. 分享 -->
+    <section class="card" aria-label="分享">
+      <h2><span class="num">4</span>分享給姊妹</h2>
+      <div class="share-box">
+        <button class="btn btn-primary" id="shareBtn">產生分享連結並複製</button>
+        <input class="input" id="shareUrl" readonly placeholder="按上面的按鈕產生連結">
+        <button class="btn btn-ghost" id="textBtn">複製文字版行程</button>
+        <p class="hint">朋友打開連結就會看到同一份行程；她改完再按一次「產生分享連結」傳回群組就好。</p>
+        <button class="btn btn-ghost btn-sm" id="resetBtn" style="align-self:center;margin-top:6px">清空重新規劃</button>
+      </div>
+    </section>
+  </div>
+
+  <footer>地點價位與停留時間為大約值，僅供參考；營業時間與最新資訊請以店家公告為準。</footer>
+</div>
+
+<!-- 加入行程對話框 -->
+<dialog id="addDlg">
+  <form method="dialog" id="addForm">
+    <h3 id="addTitle">加入行程</h3>
+    <div class="two">
+      <label class="field">開始時間<input class="input" type="time" id="addStart" required></label>
+      <label class="field">結束時間<input class="input" type="time" id="addEnd" required></label>
+    </div>
+    <p class="hint" id="addHint"></p>
+    <div class="dlg-actions">
+      <button class="btn btn-ghost" value="cancel" formnovalidate>取消</button>
+      <button class="btn btn-primary" value="ok">加入</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- 自訂地點對話框 -->
+<dialog id="customDlg">
+  <form method="dialog" id="customForm">
+    <h3>新增自訂地點</h3>
+    <label class="field">名稱<input class="input" id="cName" maxlength="30" required placeholder="例：朋友推薦的餐酒館"></label>
+    <label class="field">類型<select class="input" id="cType"></select></label>
+    <div class="two">
+      <label class="field">每人花費（元）<input class="input" id="cPrice" type="number" min="0" step="10" value="300" required inputmode="numeric"></label>
+      <label class="field">停留（分鐘）<input class="input" id="cDur" type="number" min="10" step="10" value="60" required inputmode="numeric"></label>
+    </div>
+    <div class="dlg-actions">
+      <button class="btn btn-ghost" value="cancel" formnovalidate>取消</button>
+      <button class="btn btn-primary" value="ok">新增</button>
+    </div>
+  </form>
+</dialog>
+
+<button class="btn btn-primary fab" id="fab">📋 看行程（<span id="fabCount">0</span>）</button>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ========== 資料 ========== */
+const TYPES = [
+  { key: '餐廳',   icon: '🍜' },
+  { key: '咖啡廳', icon: '☕' },
+  { key: '甜點',   icon: '🍰' },
+  { key: '景點',   icon: '📷' },
+  { key: '購物',   icon: '🛍️' }
+];
+const ICON = Object.fromEntries(TYPES.map(t => [t.key, t.icon]));
+const AREAS = ['台北信義區'];
+
+// 內建地點（價位為每人大約花費，停留時間單位：分鐘）
+const PLACES = [
+  { id:'p1',  area:'台北信義區', type:'景點',   name:'台北101觀景台',        price:600,  duration:90,  desc:'89 樓室內觀景台，整個台北盡收眼底', tags:['夜景','拍照','室內'], address:'台北101大樓 89F' },
+  { id:'p2',  area:'台北信義區', type:'景點',   name:'象山步道',             price:0,    duration:90,  desc:'爬約 20 分鐘就能拍到 101 和台北夜景', tags:['夜景','拍照','戶外','爬山'], address:'捷運象山站附近' },
+  { id:'p3',  area:'台北信義區', type:'景點',   name:'四四南村',             price:0,    duration:40,  desc:'眷村老房子配上 101 背景，超好拍', tags:['拍照','文青','戶外'], address:'松勤街，台北101旁' },
+  { id:'p4',  area:'台北信義區', type:'景點',   name:'國父紀念館',           price:0,    duration:60,  desc:'大草地散步、看衛兵交接', tags:['散步','戶外'], address:'捷運國父紀念館站' },
+  { id:'p5',  area:'台北信義區', type:'景點',   name:'松山文創園區',         price:0,    duration:90,  desc:'老菸廠改建，常有展覽和市集', tags:['展覽','文青','拍照'], address:'光復南路133號' },
+  { id:'p6',  area:'台北信義區', type:'購物',   name:'誠品生活松菸',         price:300,  duration:60,  desc:'書店、文創小物、選物逛不完', tags:['文青','室內','書店'], address:'松山文創園區旁' },
+  { id:'p7',  area:'台北信義區', type:'購物',   name:'新光三越 信義新天地',  price:800,  duration:120, desc:'A4、A8、A9、A11 四館相連，可以逛一整天', tags:['百貨','室內'], address:'捷運市政府站' },
+  { id:'p8',  area:'台北信義區', type:'購物',   name:'微風南山',             price:600,  duration:90,  desc:'日系品牌和美食很多', tags:['百貨','室內','日系'], address:'松智路17號' },
+  { id:'p9',  area:'台北信義區', type:'購物',   name:'ATT 4 FUN',            price:500,  duration:60,  desc:'服飾和餐廳，晚上氣氛熱鬧', tags:['百貨','室內'], address:'松壽路12號' },
+  { id:'p10', area:'台北信義區', type:'購物',   name:'BELLAVITA 寶麗廣塲',   price:1000, duration:60,  desc:'精品百貨，中庭很適合拍照', tags:['精品','拍照','室內'], address:'松仁路28號' },
+  { id:'p11', area:'台北信義區', type:'餐廳',   name:'鼎泰豐（101店）',      price:600,  duration:75,  desc:'經典小籠包，建議先線上取號', tags:['中式','排隊'], address:'台北101 B1' },
+  { id:'p12', area:'台北信義區', type:'餐廳',   name:'一蘭拉麵 台北本店',    price:350,  duration:50,  desc:'日式豚骨拉麵，個人隔間座位', tags:['日式','拉麵'], address:'台北101／世貿站附近' },
+  { id:'p13', area:'台北信義區', type:'餐廳',   name:'好丘 Good Cho\'s',     price:350,  duration:75,  desc:'貝果和早午餐，就在四四南村裡', tags:['早午餐','文青','貝果'], address:'四四南村內' },
+  { id:'p14', area:'台北信義區', type:'餐廳',   name:'饗 A Joy',             price:2500, duration:120, desc:'101 高樓層景觀自助餐，慶生首選', tags:['吃到飽','夜景','慶生'], address:'台北101 86F' },
+  { id:'p15', area:'台北信義區', type:'咖啡廳', name:'天空興波',             price:500,  duration:60,  desc:'台北101 88 樓的景觀咖啡廳', tags:['夜景','拍照','景觀'], address:'台北101 88F' },
+  { id:'p16', area:'台北信義區', type:'咖啡廳', name:'Café Kitsuné',         price:300,  duration:60,  desc:'法式小狐狸咖啡，杯子很可愛', tags:['拍照','法式'], address:'BELLAVITA 寶麗廣塲' },
+  { id:'p17', area:'台北信義區', type:'咖啡廳', name:'Tropo Coffee',         price:250,  duration:60,  desc:'松菸裡的設計感咖啡廳', tags:['文青','安靜'], address:'松山文創園區' },
+  { id:'p18', area:'台北信義區', type:'咖啡廳', name:'NUMÉRO QUATRE',        price:400,  duration:75,  desc:'松菸附近的餐酒館咖啡廳，打卡率很高', tags:['下午茶','拍照'], address:'松菸商圈' },
+  { id:'p19', area:'台北信義區', type:'咖啡廳', name:'Fika Fika Café',       price:250,  duration:60,  desc:'北歐風咖啡和甜點', tags:['北歐','甜點'], address:'遠百信義 A13 B3' },
+  { id:'p20', area:'台北信義區', type:'甜點',   name:'Smille 微笑蜜樂',      price:250,  duration:45,  desc:'微熱山丘的甜點品牌，水果千層酥', tags:['千層','水果','松菸'], address:'松山文創園區 A7' },
+  { id:'p21', area:'台北信義區', type:'甜點',   name:'LADY M',               price:300,  duration:45,  desc:'招牌千層蛋糕，下午茶首選', tags:['蛋糕','下午茶'], address:'信義商圈' },
+  { id:'p22', area:'台北信義區', type:'甜點',   name:'忠孝米苔目冰',         price:80,   duration:30,  desc:'古早味剉冰，黑糖粉粿每天限量', tags:['古早味','平價','冰品'], address:'永吉路' },
+  { id:'p23', area:'台北信義區', type:'甜點',   name:'新光三越 A8 甜點區',   price:300,  duration:45,  desc:'人氣甜點品牌輪流快閃，也能買伴手禮', tags:['伴手禮','快閃'], address:'新光三越 A8 B2' }
+];
+
+/* ========== 狀態 ========== */
+const STORE_KEY = 'sisterTripPlan_v1';
+const MAX_MEMBERS = 6, MIN_MEMBERS = 2;
+
+function defaultState() {
+  return { v: 1, area: AREAS[0], budget: 1500, members: ['我', '姊妹1', '姊妹2'], custom: [], items: [] };
+}
+let state = defaultState();
+const ui = { types: new Set(), q: '', onlyBudget: false };
+let pendingAdd = null;   // 正在加入的地點 id
+let endEdited = false;   // 使用者是否手動改過結束時間
+
+/* ========== 小工具 ========== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const money = n => '$' + Math.round(n).toLocaleString('zh-TW');
+const toMin = t => { const m = /^(\d{1,2}):(\d{2})$/.exec(t || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };
+const toTime = min => { min = Math.max(0, Math.min(1439, Math.round(min))); return String(Math.floor(min / 60)).padStart(2, '0') + ':' + String(min % 60).padStart(2, '0'); };
+const uid = () => Math.random().toString(36).slice(2, 9);
+
+function allPlaces() { return PLACES.concat(state.custom); }
+function findPlace(id) { return allPlaces().find(p => p.id === id); }
+function sortedItems() {
+  return state.items.filter(it => findPlace(it.pid)).sort((a, b) => toMin(a.start) - toMin(b.start));
+}
+function perPersonCost() { return sortedItems().reduce((s, it) => s + findPlace(it.pid).price, 0); }
+function remaining() { return state.budget - perPersonCost(); }
+
+let toastTimer;
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {} }
+
+/* ========== 檢查並整理載入的資料（防止壞掉的連結） ========== */
+function sanitize(o) {
+  const s = defaultState();
+  if (!o || typeof o !== 'object') return s;
+  if (AREAS.includes(o.area)) s.area = o.area;
+  if (Number.isFinite(+o.budget) && +o.budget >= 0) s.budget = Math.round(+o.budget);
+  if (Array.isArray(o.members)) {
+    const m = o.members.map(x => String(x).slice(0, 12)).slice(0, MAX_MEMBERS);
+    if (m.length >= MIN_MEMBERS) s.members = m;
+  }
+  if (Array.isArray(o.custom)) {
+    s.custom = o.custom.filter(c => c && typeof c.name === 'string' && ICON[c.type]).slice(0, 30).map((c, i) => ({
+      id: /^c[\w]+$/.test(c.id) ? c.id : 'c' + uid(), area: s.area, type: c.type,
+      name: c.name.slice(0, 30), price: Math.max(0, Math.round(+c.price || 0)),
+      duration: Math.max(10, Math.round(+c.duration || 60)), desc: '自訂地點', tags: [], address: '', custom: true
+    }));
+  }
+  if (Array.isArray(o.items)) {
+    const ids = new Set(PLACES.map(p => p.id).concat(s.custom.map(c => c.id)));
+    s.items = o.items.filter(it => it && ids.has(it.pid) && toMin(it.start) !== null && toMin(it.end) !== null).slice(0, 40).map(it => ({
+      uid: uid(), pid: it.pid, start: it.start, end: it.end,
+      actual: Number.isFinite(+it.actual) && +it.actual > 0 ? Math.round(+it.actual) : '',
+      payer: Number.isInteger(+it.payer) && +it.payer >= 0 && +it.payer < s.members.length ? +it.payer : 0
+    }));
+  }
+  return s;
+}
+
+/* 中文也能放進網址：JSON → UTF-8 → base64url */
+function encodePlan(obj) {
+  const bytes = new TextEncoder().encode(JSON.stringify(obj));
+  let bin = ''; bytes.forEach(b => bin += String.fromCharCode(b));
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function decodePlan(str) {
+  let b64 = str.replace(/-/g, '+').replace(/_/g, '/');
+  while (b64.length % 4) b64 += '=';
+  const bin = atob(b64);
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+/* ========== 畫面：設定 ========== */
+function renderArea() {
+  $('area').innerHTML = AREAS.map(a => `<option ${a === state.area ? 'selected' : ''}>${esc(a)}</option>`).join('')
+    + '<option disabled>更多地區即將推出…</option>';
+  $('budget').value = state.budget;
+}
+
+function renderMembers() {
+  $('memberCount').textContent = state.members.length;
+  $('members').innerHTML = state.members.map((m, i) => `
+    <span class="member">
+      <input value="${esc(m)}" data-i="${i}" maxlength="12" aria-label="成員 ${i + 1} 名字">
+      <button data-del="${i}" aria-label="移除 ${esc(m)}" ${state.members.length <= MIN_MEMBERS ? 'disabled' : ''}>✕</button>
+    </span>`).join('')
+    + (state.members.length < MAX_MEMBERS ? '<button class="btn btn-ghost btn-sm" id="addMember">＋ 成員</button>' : '');
+}
+
+/* ========== 畫面：探索 ========== */
+function renderTypeFilters() {
+  $('typeFilters').innerHTML =
+    `<button class="chip ${ui.types.size === 0 ? 'on' : ''}" data-type="">全部</button>` +
+    TYPES.map(t => `<button class="chip ${ui.types.has(t.key) ? 'on' : ''}" data-type="${t.key}">${t.icon} ${t.key}</button>`).join('');
+}
+
+function renderPlaces() {
+  const rem = remaining();
+  const q = ui.q.trim().toLowerCase();
+  const inPlan = new Set(state.items.map(it => it.pid));
+  const list = allPlaces().filter(p => {
+    if (p.area !== state.area) return false;
+    if (ui.types.size && !ui.types.has(p.type)) return false;
+    if (q && !(p.name + p.desc + p.tags.join(' ') + p.address).toLowerCase().includes(q)) return false;
+    if (ui.onlyBudget && p.price > rem) return false;
+    return true;
+  });
+  if (!list.length) {
+    $('places').innerHTML = `<div class="empty" style="grid-column:1/-1">找不到符合的地點 🥲<br>換個關鍵字，或關掉「只看預算內」試試看</div>`;
+    return;
+  }
+  $('places').innerHTML = list.map(p => {
+    const over = p.price > rem;
+    return `
+    <article class="place ${over ? 'over' : ''}">
+      <div class="place-top">
+        <h3>${ICON[p.type]} ${esc(p.name)}</h3>
+        <span class="tag-type">${esc(p.type)}</span>
+      </div>
+      <p class="desc">${esc(p.desc)}</p>
+      <div class="meta">每人約 ${p.price ? money(p.price) : '免費'}・停留約 ${p.duration} 分${p.address ? '・' + esc(p.address) : ''}</div>
+      <div class="badges">
+        ${over ? '<span class="badge warn">超出預算</span>' : ''}
+        ${inPlan.has(p.id) ? '<span class="badge ok">✓ 已在行程中</span>' : ''}
+        ${p.custom ? '<span class="badge ok">自訂</span>' : ''}
+      </div>
+      <button class="btn btn-primary btn-sm" data-add="${esc(p.id)}">＋ 加入行程</button>
+    </article>`;
+  }).join('');
+}
+
+/* ========== 畫面：時間軸 ========== */
+function renderTimeline() {
+  const items = sortedItems();
+  $('fabCount').textContent = items.length;
+  $('fab').classList.toggle('has', items.length > 0);
+  if (!items.length) {
+    $('timelineWrap').innerHTML = `<div class="empty">還沒有行程～<br>從左邊（手機在上面）挑地點按「加入行程」吧！</div>`;
+    return;
+  }
+  // 找出時間重疊的項目
+  const overlap = new Set();
+  let maxEnd = -1, maxEndUid = null;
+  items.forEach(it => {
+    const s = toMin(it.start), e = toMin(it.end);
+    if (s < maxEnd) { overlap.add(it.uid); overlap.add(maxEndUid); }
+    if (e > maxEnd) { maxEnd = e; maxEndUid = it.uid; }
+  });
+  const first = items[0].start;
+  const last = toTime(Math.max(...items.map(it => toMin(it.end))));
+  $('timelineWrap').innerHTML = `
+    <div class="tl-head"><span>🚶‍♀️ ${first} 出發</span><span>${items.length} 站</span><span>🏠 ${last} 結束</span></div>
+    <ol class="timeline">
+      ${items.map(it => {
+        const p = findPlace(it.pid);
+        return `
+        <li class="tl-item ${overlap.has(it.uid) ? 'overlap' : ''}" data-uid="${it.uid}">
+          <div class="tl-time">
+            <input type="time" class="t-start" value="${it.start}" aria-label="開始時間"> –
+            <input type="time" class="t-end" value="${it.end}" aria-label="結束時間">
+          </div>
+          <div class="tl-name">${ICON[p.type]} ${esc(p.name)}</div>
+          <div class="tl-meta">每人約 ${p.price ? money(p.price) : '免費'}${p.address ? '・' + esc(p.address) : ''}</div>
+          ${overlap.has(it.uid) ? '<div class="tl-warn">⚠ 時間重疊了！調整一下時間吧</div>' : ''}
+          <button class="del" data-del-item="${it.uid}" aria-label="刪除 ${esc(p.name)}">✕</button>
+        </li>`;
+      }).join('')}
+    </ol>`;
+}
+
+/* ========== 畫面：預算 ========== */
+function renderBudget() {
+  const per = perPersonCost(), n = state.members.length, rem = state.budget - per;
+  const over = rem < 0;
+  const pct = state.budget > 0 ? Math.min(100, per / state.budget * 100) : (per > 0 ? 100 : 0);
+  $('budgetBox').innerHTML = `
+    <div style="display:flex;justify-content:space-between;font-size:14px">
+      <b>預算使用</b><span>${money(per)} / ${money(state.budget)}</span>
+    </div>
+    <div class="bar ${over ? 'over' : ''}"><div style="width:${pct}%"></div></div>
+    <div class="stats">
+      <div class="stat"><b>${money(per)}</b><span>每人預估</span></div>
+      <div class="stat"><b>${money(per * n)}</b><span>全團預估（${n} 人）</span></div>
+      <div class="stat ${over ? 'over' : ''}"><b>${over ? '-' + money(-rem) : money(rem)}</b><span>每人剩餘</span></div>
+    </div>
+    ${over ? `<p class="over-msg">超出預算 ${money(-rem)}！可以換平價一點的地點，或調高預算。</p>` : ''}`;
+}
+
+/* ========== 畫面：分帳 ========== */
+function renderSplitInputs() {
+  const items = sortedItems();
+  if (!items.length) { $('splitInputs').innerHTML = `<div class="empty">先排好行程，這裡就會出現每一站</div>`; return; }
+  const opts = sel => state.members.map((m, i) => `<option value="${i}" ${i === sel ? 'selected' : ''}>${esc(m || '成員' + (i + 1))}</option>`).join('');
+  $('splitInputs').innerHTML = `
+    <div class="split-row split-head"><span>地點</span><span>實際花費（全團）</span><span>誰先付</span></div>
+    ${items.map(it => {
+      const p = findPlace(it.pid);
+      return `<div class="split-row" data-uid="${it.uid}">
+        <span>${it.start} ${ICON[p.type]} ${esc(p.name)}</span>
+        <input class="input s-amt" type="number" min="0" step="10" inputmode="numeric" placeholder="${p.price ? '約 ' + (p.price * state.members.length) : '0'}" value="${it.actual}">
+        <select class="input s-payer">${opts(it.payer)}</select>
+      </div>`;
+    }).join('')}`;
+}
+
+function computeSplit() {
+  const n = state.members.length;
+  const paid = new Array(n).fill(0);
+  let total = 0;
+  state.items.forEach(it => {
+    const a = +it.actual;
+    if (a > 0 && it.payer < n) { total += a; paid[it.payer] += a; }
+  });
+  const share = total / n;
+  const bal = paid.map(p => p - share); // 正數 = 別人要還她
+  const debtors = [], creditors = [];
+  bal.forEach((b, i) => { if (b < -0.5) debtors.push({ i, amt: -b }); else if (b > 0.5) creditors.push({ i, amt: b }); });
+  debtors.sort((a, b) => b.amt - a.amt); creditors.sort((a, b) => b.amt - a.amt);
+  const transfers = [];
+  let d = 0, c = 0;
+  while (d < debtors.length && c < creditors.length) {
+    const x = Math.min(debtors[d].amt, creditors[c].amt);
+    if (Math.round(x) > 0) transfers.push({ from: debtors[d].i, to: creditors[c].i, amt: Math.round(x) });
+    debtors[d].amt -= x; creditors[c].amt -= x;
+    if (debtors[d].amt < 0.5) d++;
+    if (creditors[c].amt < 0.5) c++;
+  }
+  return { total, share, paid, transfers };
+}
+
+function renderSplitResult() {
+  const { total, share, transfers } = computeSplit();
+  const name = i => esc(state.members[i] || '成員' + (i + 1));
+  if (!total) { $('splitResult').innerHTML = '還沒填實際花費，填了之後這裡會顯示分帳結果 💸'; return; }
+  $('splitResult').innerHTML = `
+    全團共花 <b>${money(total)}</b>，每人應付 <b>${money(share)}</b>
+    ${transfers.length
+      ? `<ul>${transfers.map(t => `<li>${name(t.from)} → ${name(t.to)}　<b>${money(t.amt)}</b></li>`).join('')}</ul>`
+      : '<div style="margin-top:6px">大家剛好付得一樣，不用轉帳 🎉</div>'}`;
+}
+
+/* ========== 全部重畫 ========== */
+function renderAll() {
+  renderArea(); renderMembers(); renderTypeFilters(); renderPlaces();
+  renderTimeline(); renderBudget(); renderSplitInputs(); renderSplitResult();
+}
+function refreshPlan() { // 行程或預算有變動時
+  renderPlaces(); renderTimeline(); renderBudget(); renderSplitInputs(); renderSplitResult(); save();
+}
+
+/* ========== 事件：設定 ========== */
+$('budget').addEventListener('input', e => {
+  const v = Math.round(+e.target.value);
+  state.budget = Number.isFinite(v) && v >= 0 ? v : 0;
+  renderPlaces(); renderBudget(); save();
+});
+$('area').addEventListener('change', e => { state.area = e.target.value; refreshPlan(); });
+
+$('members').addEventListener('input', e => {
+  if (e.target.dataset.i === undefined) return;
+  state.members[+e.target.dataset.i] = e.target.value.slice(0, 12);
+  renderSplitInputs(); renderSplitResult(); save();
+});
+$('members').addEventListener('click', e => {
+  if (e.target.id === 'addMember') {
+    if (state.members.length < MAX_MEMBERS) state.members.push('姊妹' + state.members.length);
+  } else if (e.target.dataset.del !== undefined) {
+    const i = +e.target.dataset.del;
+    if (state.members.length <= MIN_MEMBERS) return;
+    state.members.splice(i, 1);
+    state.items.forEach(it => { if (it.payer === i) it.payer = 0; else if (it.payer > i) it.payer--; });
+  } else return;
+  renderMembers(); renderBudget(); renderSplitInputs(); renderSplitResult(); save();
+});
+
+/* ========== 事件：探索 ========== */
+$('typeFilters').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  const t = b.dataset.type;
+  if (!t) ui.types.clear();
+  else ui.types.has(t) ? ui.types.delete(t) : ui.types.add(t);
+  renderTypeFilters(); renderPlaces();
+});
+$('search').addEventListener('input', e => { ui.q = e.target.value; renderPlaces(); });
+$('onlyBudget').addEventListener('change', e => { ui.onlyBudget = e.target.checked; renderPlaces(); });
+
+$('places').addEventListener('click', e => {
+  const b = e.target.closest('[data-add]'); if (!b) return;
+  openAdd(b.dataset.add);
+});
+
+/* 加入行程對話框 */
+function openAdd(pid) {
+  const p = findPlace(pid); if (!p) return;
+  pendingAdd = pid; endEdited = false;
+  const items = sortedItems();
+  const startMin = items.length ? Math.max(...items.map(it => toMin(it.end))) : 11 * 60;
+  $('addTitle').textContent = `加入「${p.name}」`;
+  $('addStart').value = toTime(startMin);
+  $('addEnd').value = toTime(startMin + p.duration);
+  $('addHint').textContent = `建議停留約 ${p.duration} 分鐘，結束時間會自動計算，也可以自己改。`;
+  $('addDlg').showModal();
+}
+$('addStart').addEventListener('input', () => {
+  const p = findPlace(pendingAdd); const s = toMin($('addStart').value);
+  if (p && s !== null && !endEdited) $('addEnd').value = toTime(s + p.duration);
+});
+$('addEnd').addEventListener('input', () => { endEdited = true; });
+$('addDlg').addEventListener('close', () => {
+  if ($('addDlg').returnValue !== 'ok' || !pendingAdd) { pendingAdd = null; return; }
+  const p = findPlace(pendingAdd);
+  let s = toMin($('addStart').value), en = toMin($('addEnd').value);
+  if (s === null) s = 11 * 60;
+  if (en === null || en <= s) en = s + p.duration;
+  state.items.push({ uid: uid(), pid: pendingAdd, start: toTime(s), end: toTime(en), actual: '', payer: 0 });
+  pendingAdd = null;
+  refreshPlan();
+  toast(`已加入 ${p.name} ✨`);
+});
+
+/* 自訂地點 */
+$('cType').innerHTML = TYPES.map(t => `<option value="${t.key}">${t.icon} ${t.key}</option>`).join('');
+$('openCustom').addEventListener('click', () => { $('customForm').reset(); $('customDlg').showModal(); });
+$('customDlg').addEventListener('close', () => {
+  if ($('customDlg').returnValue !== 'ok') return;
+  const name = $('cName').value.trim(); if (!name) return;
+  const c = {
+    id: 'c' + uid(), area: state.area, type: $('cType').value, name: name.slice(0, 30),
+    price: Math.max(0, Math.round(+$('cPrice').value || 0)),
+    duration: Math.max(10, Math.round(+$('cDur').value || 60)),
+    desc: '自訂地點', tags: [], address: '', custom: true
+  };
+  state.custom.push(c);
+  refreshPlan();
+  toast(`新增了 ${c.name}，可以加入行程囉`);
+});
+
+$('fab').addEventListener('click', () => document.querySelector('.plan').scrollIntoView({ behavior: 'smooth' }));
+
+/* ========== 事件：時間軸 ========== */
+$('timelineWrap').addEventListener('change', e => {
+  const li = e.target.closest('.tl-item'); if (!li) return;
+  const it = state.items.find(x => x.uid === li.dataset.uid); if (!it) return;
+  const p = findPlace(it.pid);
+  if (e.target.classList.contains('t-start')) {
+    const s = toMin(e.target.value); if (s === null) return;
+    const len = Math.max(10, toMin(it.end) - toMin(it.start));
+    it.start = toTime(s); it.end = toTime(s + len);   // 保持原本停留長度
+  } else if (e.target.classList.contains('t-end')) {
+    const en = toMin(e.target.value); if (en === null) return;
+    it.end = en > toMin(it.start) ? toTime(en) : toTime(toMin(it.start) + p.duration);
+  }
+  refreshPlan();
+});
+$('timelineWrap').addEventListener('click', e => {
+  const b = e.target.closest('[data-del-item]'); if (!b) return;
+  state.items = state.items.filter(x => x.uid !== b.dataset.delItem);
+  refreshPlan();
+});
+
+/* ========== 事件：分帳 ========== */
+$('splitInputs').addEventListener('input', e => {
+  const row = e.target.closest('.split-row'); if (!row) return;
+  const it = state.items.find(x => x.uid === row.dataset.uid); if (!it) return;
+  if (e.target.classList.contains('s-amt')) {
+    const v = Math.round(+e.target.value);
+    it.actual = Number.isFinite(v) && v > 0 ? v : '';
+  }
+  if (e.target.classList.contains('s-payer')) it.payer = +e.target.value;
+  renderSplitResult(); save();
+});
+$('splitInputs').addEventListener('change', e => {
+  if (e.target.classList.contains('s-payer')) {
+    const row = e.target.closest('.split-row');
+    const it = state.items.find(x => x.uid === row.dataset.uid);
+    if (it) { it.payer = +e.target.value; renderSplitResult(); save(); }
+  }
+});
+
+/* ========== 分享 ========== */
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; }
+  catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (_) {}
+    ta.remove(); return ok;
+  }
+}
+$('shareBtn').addEventListener('click', async () => {
+  const data = {
+    v: 1, area: state.area, budget: state.budget, members: state.members,
+    custom: state.custom.map(({ id, type, name, price, duration }) => ({ id, type, name, price, duration })),
+    items: state.items.map(({ pid, start, end, actual, payer }) => ({ pid, start, end, actual, payer }))
+  };
+  const url = location.origin + location.pathname + '#plan=' + encodePlan(data);
+  $('shareUrl').value = url;
+  toast(await copyText(url) ? '連結已複製！貼到群組吧 💌' : '請長按上方連結手動複製');
+});
+$('shareUrl').addEventListener('focus', e => e.target.select());
+
+$('textBtn').addEventListener('click', async () => {
+  const items = sortedItems();
+  if (!items.length) { toast('行程還是空的喔'); return; }
+  const per = perPersonCost();
+  const lines = [
+    `【姊妹出遊】${state.area}`,
+    `成員：${state.members.join('、')}`,
+    '',
+    ...items.map(it => { const p = findPlace(it.pid); return `${it.start}–${it.end} ${ICON[p.type]} ${p.name}（每人約 ${p.price ? money(p.price) : '免費'}）`; }),
+    '',
+    `每人預估 ${money(per)}／預算 ${money(state.budget)}`
+  ];
+  const { total, transfers } = computeSplit();
+  if (total) {
+    lines.push('', `分帳：全團共 ${money(total)}`);
+    transfers.forEach(t => lines.push(`${state.members[t.from]} → ${state.members[t.to]} ${money(t.amt)}`));
+  }
+  toast(await copyText(lines.join('\n')) ? '文字版行程已複製 📋' : '複製失敗，請再試一次');
+});
+
+$('resetBtn').addEventListener('click', () => {
+  if (!confirm('確定要清空目前的行程、成員和分帳資料嗎？')) return;
+  state = defaultState(); $('shareUrl').value = '';
+  renderAll(); save(); toast('已清空，重新開始規劃吧');
+});
+
+/* ========== 啟動：先看網址有沒有分享的行程，再看本機暫存 ========== */
+(function init() {
+  let loadedFromLink = false;
+  const m = /#plan=([\w-]+)/.exec(location.hash);
+  if (m) {
+    try { state = sanitize(decodePlan(m[1])); loadedFromLink = true; }
+    catch (e) { toast('這個分享連結好像壞掉了，先開啟空白行程'); }
+    history.replaceState(null, '', location.pathname + location.search);
+  }
+  if (!loadedFromLink) {
+    try { const saved = localStorage.getItem(STORE_KEY); if (saved) state = sanitize(JSON.parse(saved)); } catch (e) {}
+  }
+  renderAll(); save();
+  if (loadedFromLink) setTimeout(() => toast('已載入姊妹分享的行程 💙'), 300);
+})();
+</script>
+</body>
+</html>
